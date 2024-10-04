@@ -4,7 +4,7 @@ import java.util.Scanner;
 public class App {
     public static void main(String[] args) {
         Scanner teclado = new Scanner(System.in);
-        ContaCorrente conta = new ContaCorrente(0, 500);
+        ContaCorrente conta = new ContaCorrente(0, 1200);
 
         while (true) {
             System.out.println(
