@@ -1,18 +1,24 @@
+//TODO: implementar funcionalidades pix com o banco de dados
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ContaCorrente {
+    int numero = 0;
     double saldo = 0;
     double limite = 0;
-    ArrayList<Double> transacoes = new ArrayList<Double>();
-    HashMap<String, String> chavesPix = new HashMap<String, String>();
-    ArrayList<String> chavesPixFavoritas = new ArrayList<String>();
+    //HashMap<String, String> chavesPix = new HashMap<String, String>();
+    //ArrayList<String> chavesPixFavoritas = new ArrayList<String>();
 
-    ContaCorrente(double saldo, double limite) {
+    ContaCorrente(int numero, double saldo, double limite) {
+        this.numero = numero;
         this.saldo = saldo;
         this.limite = limite;
-        if (saldo != 0) this.transacoes.add(saldo);
+    }
+
+    public int getNumero() {
+        return this.numero;
     }
 
     public double getSaldo() {
@@ -33,30 +39,19 @@ public class ContaCorrente {
         if (quantia < 0) throw new IllegalArgumentException("O valor do depósito deve ser positivo.");
 
         this.saldo += quantia;
-        this.transacoes.add(quantia);
     }
 
-    public void sacar(double quantia) {
+    public void sacar(double quantia, boolean consulta) {
         if (quantia < 0) throw new IllegalArgumentException("O valor do saque deve ser positivo.");
         if (quantia > this.saldo + this.limite) throw new IllegalArgumentException("Saldo insuficiente para saque.");
 
-        this.saldo -= quantia;
-        this.transacoes.add(-quantia);
-    }
-
-    public boolean transferir(double quantia, String chavePix) {
-        if (quantia < 0) throw new IllegalArgumentException("O valor da transferência deve ser positivo.");
-        if (quantia > this.saldo + this.limite) throw new IllegalArgumentException("Saldo insuficiente para transferência.");
-        if (chavePix.length() != 11 || !chavePix.matches("[0-9]{11}")) throw new IllegalArgumentException("Chave Pix inválida.");
-
-        this.transacoes.add(-quantia);
-        if (!this.chavesPixFavoritas.contains(chavePix)) {
-            this.chavesPixFavoritas.add(chavePix);
+        // se consulta for verdadeiro, apenas verificar se o saque seria possível
+        if (!consulta) {
+            this.saldo -= quantia;
         }
-        this.saldo -= quantia;
-        return true;
     }
 
+    /*
     public void adicionarChavePix(String chavePix, String descricao) {
         if (chavePix.length() != 11 || !chavePix.matches("[0-9]{11}")) throw new IllegalArgumentException("Chave Pix inválida.");
 
@@ -74,18 +69,6 @@ public class ContaCorrente {
         return true;
     }
 
-    public void exibirTransacoes(int maximoTransacoes) {
-        for (int i = 0; i < this.transacoes.size(); i++) {
-            if (i == maximoTransacoes) break;
-
-            System.out.printf("%d. R$%.2f%n", i + 1, this.transacoes.get(i));
-        }
-    }
-
-    public void exibirTransacoes() {
-        exibirTransacoes(-1);
-    }
-
     public void exibirChavesPix() {
         for (Map.Entry<String, String> chave : this.chavesPix.entrySet()) {
             System.out.print(chave.getKey());
@@ -101,4 +84,5 @@ public class ContaCorrente {
             System.out.println(chave);
         }
     }
+    */
 }

@@ -1,4 +1,2 @@
-
-.vscode/settings.json
-bin/App.class
-bin/ContaCorrente.class
+.vscode
+bin
