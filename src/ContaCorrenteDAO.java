@@ -1,4 +1,7 @@
+//TODO: método apagar conta (saldo da conta deve ser exatamente 0)
+
 import java.sql.*;
+import java.time.LocalDateTime;
 
 public class ContaCorrenteDAO {
 	private Connection conectar() throws SQLException {
@@ -31,7 +34,8 @@ public class ContaCorrenteDAO {
 				  + "tipo_transacao TEXT, "
 				  + "quantia REAL, "
 				  + "id_origem INTEGER REFERENCES conta_corrente(numero), "
-				  + "id_destinatario INTEGER REFERENCES conta_corrente(numero))";
+				  + "id_destinatario INTEGER REFERENCES conta_corrente(numero), "
+				  + "data_hora DATETIME)";
 
 			try (Statement stmt = conn.createStatement()) {
 				stmt.execute(sql);
@@ -106,7 +110,7 @@ public class ContaCorrenteDAO {
 			if (conn == null) return;
 
 			String sql =   "INSERT INTO transacoes "
-					     + "VALUES (NULL, ?, ?, ?, ?)";
+					     + "VALUES (NULL, ?, ?, ?, ?, ?)";
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 				pstmt.setString(1, tipoTransacao);
 				pstmt.setDouble(2, quantia);
@@ -118,6 +122,8 @@ public class ContaCorrenteDAO {
 				} else {
 					pstmt.setInt(4, destinatario.getNumero());
 				}
+
+				pstmt.setString(5, LocalDateTime.now().toString());
 				pstmt.execute();
 			}
 		} catch (SQLException e) {
@@ -129,7 +135,7 @@ public class ContaCorrenteDAO {
 		try (Connection conn = this.conectar()) {
 			if (conn == null) return;
 
-			String sql =   "SELECT quantia, id_destinatario "
+			String sql =   "SELECT tipo_transacao, quantia, id_origem, id_destinatario, strftime('%d/%m/%Y %T', data_hora) AS data_hora "
 			             + "FROM transacoes "
 			             + "WHERE id_origem = ? OR id_destinatario = ? "
 			             + "ORDER BY id_transacao DESC";
@@ -140,23 +146,51 @@ public class ContaCorrenteDAO {
 				ResultSet rs = pstmt.executeQuery();
 				int i = 0;
 				while (rs.next()) {
-        	    	if (i == maximoTransacoes) return;
+        	    	if (i == maximoTransacoes) break;
 
         	    	// sinal "+" ou "-", mostrando se a conta recebeu ou perdeu dinheiro
         	    	boolean sinal = (rs.getDouble("quantia") >= 0);
 
         	    	// no database, a quantia é salva em relação ao id_origem
         	    	// ou seja, uma transferência é salva como valor negativo
-        	    	// se o destinatário for esta conta corrente, inverter o sinal
-        	    	if (rs.getInt("id_destinatario") == conta.getNumero()) sinal = !sinal;
+        	    	// se o destinatário for esta mesma conta corrente, inverter o sinal para corrigir
+        	    	if (rs.getInt("id_destinatario") == conta.getNumero()) {
+						sinal = !sinal;
+					}
 
-        	    	System.out.printf(
-        	    		"%d) %sR$%.2f%n", //ex.: "1) +R$35,00"
-        	    		++i,
+					String tipoTransacao = rs.getString("tipo_transacao");
+					String tipoTransacaoFormatado = "";
+
+					if (tipoTransacao.equals("deposit")) {
+						tipoTransacaoFormatado = "Depósito";
+					} else if (tipoTransacao.equals("withdrawal")) {
+						tipoTransacaoFormatado = "Saque";
+					} else if (tipoTransacao.equals("transfer")) {
+						if (sinal) {
+							tipoTransacaoFormatado = "Transferência recebida";
+						} else {
+							tipoTransacaoFormatado = "Transferência realizada";
+						}
+					}
+
+					System.out.println("----------");
+					System.out.println(rs.getString("data_hora"));
+					System.out.println(tipoTransacaoFormatado);
+        	    	System.out.printf("%sR$%.2f%n", //ex.: "+R$35,00"
         	    		sinal ? "+" : "-",
         	    		Math.abs(rs.getDouble("quantia"))
         	    	);
+					if (tipoTransacaoFormatado.equals("Transferência recebida")) {
+						System.out.println("De: Conta nº" + rs.getInt("id_origem"));
+					} else if (tipoTransacaoFormatado.equals("Transferência realizada")) {
+						System.out.println("Para: Conta nº" + rs.getInt("id_destinatario"));
+					}
+
+					i++;
 				}
+
+				System.out.println("----------");
+				System.out.println();
 			}
 		} catch (SQLException e) {
 		    System.out.println(e.getMessage());
@@ -166,6 +200,38 @@ public class ContaCorrenteDAO {
     public void exibirTransacoes(ContaCorrente conta) {
         exibirTransacoes(conta, -1);
     }
+
+	public void deletarConta(ContaCorrente conta) {
+		try (Connection conn = this.conectar()) {
+			if (conn == null) return;
+
+			String sql =   "DELETE FROM conta_corrente "
+					     + "WHERE numero = ?";
+			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+				pstmt.setInt(1, conta.getNumero());
+
+				pstmt.execute();
+			}
+		} catch (SQLException e) {
+		    System.out.println(e.getMessage());
+		}
+	}
+
+    // Atualiza o registro da conta no BD com o seu estado atual no app
+	public void atualizarSaldo(ContaCorrente conta) {
+		try (Connection conn = this.conectar()) {
+			if (conn == null) return;
+
+			String sql = "UPDATE conta_corrente SET saldo = ? WHERE numero = ?";
+			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+				pstmt.setDouble(1, conta.getSaldo());
+				pstmt.setInt(2, conta.getNumero());
+				pstmt.executeUpdate();
+			}
+		} catch (SQLException e) {
+		    System.out.println(e.getMessage());
+		}
+	}
 
     //TODO: implementar chave pix como alternativa
 
@@ -185,20 +251,4 @@ public class ContaCorrenteDAO {
         return true;
     }
     */
-
-    // Atualiza o registro da conta no BD com o seu estado atual no app
-	public void atualizarSaldo(ContaCorrente conta) {
-		try (Connection conn = this.conectar()) {
-			if (conn == null) return;
-
-			String sql = "UPDATE conta_corrente SET saldo = ? WHERE numero = ?";
-			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-				pstmt.setDouble(1, conta.getSaldo());
-				pstmt.setInt(2, conta.getNumero());
-				pstmt.executeUpdate();
-			}
-		} catch (SQLException e) {
-		    System.out.println(e.getMessage());
-		}
-	}
 }

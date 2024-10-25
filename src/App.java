@@ -1,5 +1,3 @@
-//TODO: integrar todas as funcionalidades restantes ao BD
-
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
@@ -111,11 +109,13 @@ public class App {
                 + "7. Remover chave Pix (temp. indisponível)\n"
                 + "8. Exibir chaves Pix (temp. indisponível)\n"
                 + "9. Exibir chaves Pix favoritas (temp. indisponível)\n"
+                + "10. Deletar conta\n"
+                + "\n"
                 + "0. Sair"
             );
 
             int escolha = -1;
-            boolean encerrarPrograma = false; //usado apenas pela opção "Sair"
+            boolean encerrarPrograma = false;
 
             while (true) {
                 try {
@@ -139,6 +139,7 @@ public class App {
                     //case 7: exibirMenu = removerPix(teclado, conta);               break;
                     //case 8: exibirMenu = exibirPix(conta);                         break;
                     //case 9: exibirMenu = exibirPixFavoritas(conta);                break;
+                    case 10: exibirMenu = deletarConta(teclado, conta, contaDAO);    break;
                     case 0:
                         exibirMenu = false;
                         encerrarPrograma = true;
@@ -148,8 +149,15 @@ public class App {
                         continue;
                 }
 
-                if (escolha != 4) { //o método transferir já atualiza o saldo
+                // o método transferir já atualiza o saldo
+                // e não há razão para atualizar se a conta foi excluída
+                if (escolha != 4 && escolha != 10) {
                     contaDAO.atualizarSaldo(conta);
+                }
+
+                // fechar tudo se a conta foi excluída
+                if (contaDAO.buscarConta(conta.getNumero()) == null) {
+                    encerrarPrograma = true;
                 }
 
                 if (!exibirMenu) break; //não mostrar o menu Retornar se o usuário escolheu sair
@@ -486,6 +494,50 @@ public class App {
         // contaDAO já se encarrega de dar print dos resultados
         
         return true;
+    }
+
+    private static boolean deletarConta(Scanner teclado, ContaCorrente conta, ContaCorrenteDAO contaDAO) {
+        System.out.println(
+              "AVISO: Você está prestes a fechar a sua conta corrente. Esta ação é irreversível!\n"
+            + "Tem certeza que deseja permanentemente fechar sua conta?\n"
+            + "\n"
+            + "1. Sim, desejo FECHAR minha conta\n"
+            + "0. Não, desejo MANTER minha conta"
+        );
+        
+        int escolha = -1;
+        
+        while (true) {
+            try {
+                escolha = teclado.nextInt();
+            } catch (InputMismatchException e) {
+                System.out.print("Escolha inválida.");
+                teclado.nextLine();
+                continue;
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+                continue;
+            }
+
+            switch (escolha) {
+                case 1:
+                    try {
+                        contaDAO.deletarConta(conta);
+                    } catch (Exception e) {
+                        System.out.println("Falha inesperada, tente novamente.");
+                        return true;
+                    }
+                    
+                    System.out.println("Conta excluída com sucesso.");
+                    return true;
+                case 0:
+                    return false;
+                default:
+                    System.out.println("Escolha inválida.");
+                    teclado.nextLine();
+                    continue;
+            }
+        }
     }
     
     //TODO: implementar funcionalidades pix com o banco de dados

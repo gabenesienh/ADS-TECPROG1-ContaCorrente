@@ -1,9 +1,5 @@
 //TODO: implementar funcionalidades pix com o banco de dados
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 public class ContaCorrente {
     int numero = 0;
     double saldo = 0;
