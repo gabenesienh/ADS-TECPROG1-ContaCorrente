@@ -1,7 +1,11 @@
 //TODO: método apagar conta (saldo da conta deve ser exatamente 0)
+//TODO: trocar java.time.LocalDateTime por java.sql.Timestamp
+//TODO: implementar buscarHistorico
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ContaCorrenteDAO {
 	private Connection conectar() throws SQLException {
@@ -92,6 +96,42 @@ public class ContaCorrenteDAO {
 		}
 
 		return conta;
+	}
+
+	public List<Historico> buscarHistorico(int numeroConta) {
+		List<Historico> listaHistorico = new ArrayList<>();
+		
+		try (Connection conn = this.conectar()) {
+			if (conn == null) return null;
+
+			String sql =   "SELECT * " 
+			             + "FROM transacoes "
+			             + "WHERE id_origem = ? OR id_destinatario = ?";
+			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+				pstmt.setInt(1, numeroConta);
+				pstmt.setInt(2, numeroConta);
+
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Historico historico = new Historico(
+						rs.getInt("id_transacao"),
+						rs.getString("tipo_transacao"),
+						rs.getDouble("quantia"),
+						rs.getInt("id_origem"),
+						rs.getInt("id_destinatario"),
+						rs.getTimestamp("data_hora")
+					);
+
+					listaHistorico.add(historico);
+				}
+			}
+
+			return listaHistorico;
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+
+		return null;
 	}
 
     public void transferir(double quantia, ContaCorrente origem, ContaCorrente destinatario) {	

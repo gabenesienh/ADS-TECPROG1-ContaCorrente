@@ -1,3 +1,5 @@
+//TODO: refatorar tudo isso aqui porque tá horrível
+
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
