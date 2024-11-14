@@ -1,4 +1,4 @@
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class Historico {
     private int idTransacao;
@@ -6,9 +6,9 @@ public class Historico {
     private double quantia;
     private int idOrigem;
     private int idDestinatario;
-    private Timestamp dataHora;
+    private LocalDateTime dataHora;
 
-    public Historico(int idTransacao, String tipoTransacao, double quantia, int idOrigem, int idDestinatario, Timestamp dataHora) {
+    public Historico(int idTransacao, String tipoTransacao, double quantia, int idOrigem, int idDestinatario, LocalDateTime dataHora) {
         this.idTransacao = idTransacao;
         this.tipoTransacao = tipoTransacao;
         this.quantia = quantia;
@@ -32,7 +32,7 @@ public class Historico {
     public int getIdDestinatario() {
         return idDestinatario;
     }
-    public Timestamp getDataHora() {
+    public LocalDateTime getDataHora() {
         return dataHora;
     }
 
@@ -51,7 +51,7 @@ public class Historico {
     public void setIdDestinatario(int id_destinatario) {
         this.idDestinatario = id_destinatario;
     }
-    public void setDataHora(Timestamp data_hora) {
+    public void setDataHora(LocalDateTime data_hora) {
         this.dataHora = data_hora;
     }
 }

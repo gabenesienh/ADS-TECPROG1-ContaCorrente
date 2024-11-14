@@ -1,6 +1,4 @@
-//TODO: método apagar conta (saldo da conta deve ser exatamente 0)
-//TODO: trocar java.time.LocalDateTime por java.sql.Timestamp
-//TODO: implementar buscarHistorico
+//TODO: apagar histórico de transações de contas deletadas
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -104,9 +102,9 @@ public class ContaCorrenteDAO {
 		try (Connection conn = this.conectar()) {
 			if (conn == null) return null;
 
-			String sql =   "SELECT * " 
+			String sql =   "SELECT * "
 			             + "FROM transacoes "
-			             + "WHERE id_origem = ? OR id_destinatario = ?";
+			             + "WHERE id_origem = ? OR id_destinatario = ? ";
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 				pstmt.setInt(1, numeroConta);
 				pstmt.setInt(2, numeroConta);
@@ -119,7 +117,7 @@ public class ContaCorrenteDAO {
 						rs.getDouble("quantia"),
 						rs.getInt("id_origem"),
 						rs.getInt("id_destinatario"),
-						rs.getTimestamp("data_hora")
+						rs.getObject("data_hora", LocalDateTime.class)
 					);
 
 					listaHistorico.add(historico);
@@ -171,77 +169,9 @@ public class ContaCorrenteDAO {
 		}
     }
 
-    public void exibirTransacoes(ContaCorrente conta, int maximoTransacoes) {
-		try (Connection conn = this.conectar()) {
-			if (conn == null) return;
-
-			String sql =   "SELECT tipo_transacao, quantia, id_origem, id_destinatario, strftime('%d/%m/%Y %T', data_hora) AS data_hora "
-			             + "FROM transacoes "
-			             + "WHERE id_origem = ? OR id_destinatario = ? "
-			             + "ORDER BY id_transacao DESC";
-			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-				pstmt.setInt(1, conta.getNumero());
-				pstmt.setInt(2, conta.getNumero());
-				
-				ResultSet rs = pstmt.executeQuery();
-				int i = 0;
-				while (rs.next()) {
-        	    	if (i == maximoTransacoes) break;
-
-        	    	// sinal "+" ou "-", mostrando se a conta recebeu ou perdeu dinheiro
-        	    	boolean sinal = (rs.getDouble("quantia") >= 0);
-
-        	    	// no database, a quantia é salva em relação ao id_origem
-        	    	// ou seja, uma transferência é salva como valor negativo
-        	    	// se o destinatário for esta mesma conta corrente, inverter o sinal para corrigir
-        	    	if (rs.getInt("id_destinatario") == conta.getNumero()) {
-						sinal = !sinal;
-					}
-
-					String tipoTransacao = rs.getString("tipo_transacao");
-					String tipoTransacaoFormatado = "";
-
-					if (tipoTransacao.equals("deposit")) {
-						tipoTransacaoFormatado = "Depósito";
-					} else if (tipoTransacao.equals("withdrawal")) {
-						tipoTransacaoFormatado = "Saque";
-					} else if (tipoTransacao.equals("transfer")) {
-						if (sinal) {
-							tipoTransacaoFormatado = "Transferência recebida";
-						} else {
-							tipoTransacaoFormatado = "Transferência realizada";
-						}
-					}
-
-					System.out.println("----------");
-					System.out.println(rs.getString("data_hora"));
-					System.out.println(tipoTransacaoFormatado);
-        	    	System.out.printf("%sR$%.2f%n", //ex.: "+R$35,00"
-        	    		sinal ? "+" : "-",
-        	    		Math.abs(rs.getDouble("quantia"))
-        	    	);
-					if (tipoTransacaoFormatado.equals("Transferência recebida")) {
-						System.out.println("De: Conta nº" + rs.getInt("id_origem"));
-					} else if (tipoTransacaoFormatado.equals("Transferência realizada")) {
-						System.out.println("Para: Conta nº" + rs.getInt("id_destinatario"));
-					}
-
-					i++;
-				}
-
-				System.out.println("----------");
-				System.out.println();
-			}
-		} catch (SQLException e) {
-		    System.out.println(e.getMessage());
-		}
-    }
-
-    public void exibirTransacoes(ContaCorrente conta) {
-        exibirTransacoes(conta, -1);
-    }
-
 	public void deletarConta(ContaCorrente conta) {
+		if (conta.getSaldo() != 0) throw new IllegalArgumentException("O saldo da conta deve ser zero (R$0,00).");
+
 		try (Connection conn = this.conectar()) {
 			if (conn == null) return;
 
@@ -272,23 +202,4 @@ public class ContaCorrenteDAO {
 		    System.out.println(e.getMessage());
 		}
 	}
-
-    //TODO: implementar chave pix como alternativa
-
-    /*
-    public boolean transferir(double quantia, String chavePix) {
-        if (quantia < 0) throw new IllegalArgumentException("O valor da transferência deve ser positivo.");
-        if (quantia > this.saldo + this.limite) throw new IllegalArgumentException("Saldo insuficiente para transferência.");
-        if (chavePix.length() != 11 || !chavePix.matches("[0-9]{11}")) throw new IllegalArgumentException("Chave Pix inválida.");
-
-        ...
-
-        if (!this.chavesPixFavoritas.contains(chavePix)) {
-            this.chavesPixFavoritas.add(chavePix);
-        }
-        this.transacoes.add(-quantia);
-        this.saldo -= quantia;
-        return true;
-    }
-    */
 }

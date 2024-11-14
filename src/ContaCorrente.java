@@ -1,11 +1,7 @@
-//TODO: implementar funcionalidades pix com o banco de dados
-
 public class ContaCorrente {
     int numero = 0;
     double saldo = 0;
     double limite = 0;
-    //HashMap<String, String> chavesPix = new HashMap<String, String>();
-    //ArrayList<String> chavesPixFavoritas = new ArrayList<String>();
 
     ContaCorrente(int numero, double saldo, double limite) {
         this.numero = numero;
@@ -46,39 +42,4 @@ public class ContaCorrente {
             this.saldo -= quantia;
         }
     }
-
-    /*
-    public void adicionarChavePix(String chavePix, String descricao) {
-        if (chavePix.length() != 11 || !chavePix.matches("[0-9]{11}")) throw new IllegalArgumentException("Chave Pix inválida.");
-
-        this.chavesPix.put(chavePix, descricao);
-    }
-
-    public void adicionarChavePix(String chavePix) {
-        adicionarChavePix(chavePix, "");
-    }
-
-    public boolean removerChavePix(String chavePix) {
-        if (!this.chavesPix.containsKey(chavePix)) return false;
-        
-        this.chavesPix.remove(chavePix);
-        return true;
-    }
-
-    public void exibirChavesPix() {
-        for (Map.Entry<String, String> chave : this.chavesPix.entrySet()) {
-            System.out.print(chave.getKey());
-            if (chave.getValue() != "") {
-                System.out.print(": \"" + chave.getValue() + "\"");
-            }
-            System.out.println();
-        }
-    }
-
-    public void exibirChavesPixFavoritas() {
-        for (String chave : this.chavesPixFavoritas) {
-            System.out.println(chave);
-        }
-    }
-    */
 }

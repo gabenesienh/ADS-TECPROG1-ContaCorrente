@@ -1,7 +1,9 @@
-//TODO: refatorar tudo isso aqui porque tá horrível
+//TODO: refatorar tudo isso aqui
 
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Scanner;
+import java.time.format.DateTimeFormatter;
 
 public class App {
     public static void main(String[] args) {
@@ -107,11 +109,7 @@ public class App {
                 + "3. Sacar\n"
                 + "4. Transferir\n"
                 + "5. Exibir transações\n"
-                + "6. Adicionar chave Pix (temp. indisponível)\n"
-                + "7. Remover chave Pix (temp. indisponível)\n"
-                + "8. Exibir chaves Pix (temp. indisponível)\n"
-                + "9. Exibir chaves Pix favoritas (temp. indisponível)\n"
-                + "10. Deletar conta\n"
+                + "6. Deletar conta\n"
                 + "\n"
                 + "0. Sair"
             );
@@ -137,11 +135,7 @@ public class App {
                     case 3: exibirMenu = sacar(teclado, conta, contaDAO);            break;
                     case 4: exibirMenu = transferir(teclado, conta, contaDAO);       break;
                     case 5: exibirMenu = exibirTransacoes(teclado, conta, contaDAO); break;
-                    //case 6: exibirMenu = adicionarPix(teclado, conta);             break;
-                    //case 7: exibirMenu = removerPix(teclado, conta);               break;
-                    //case 8: exibirMenu = exibirPix(conta);                         break;
-                    //case 9: exibirMenu = exibirPixFavoritas(conta);                break;
-                    case 10: exibirMenu = deletarConta(teclado, conta, contaDAO);    break;
+                    case 6: exibirMenu = deletarConta(teclado, conta, contaDAO);    break;
                     case 0:
                         exibirMenu = false;
                         encerrarPrograma = true;
@@ -300,201 +294,150 @@ public class App {
             teclado.nextLine(); //limpar o buffer
 
             while (true) {
-                //TODO: implementar chave pix como alternativa
-                System.out.println(
-                      "Como deseja realizar a transferência?\n"
-                    + "1. Número da conta\n"
-                    + "2. Chave PIX (temp. indisponível)\n"
-                    + "0. Retornar"
-                );
-
                 int escolha = -1;
                 int numeroDestinatario = -1;
 
+                System.out.println(
+                        "Informe o número da conta do destinatário:\n"
+                    + "(Digite \"0\" para retornar)"
+                );
+
+                ContaCorrente contaDestinatario = null;
+
+                // essencialmente o mesmo código do menu inicial
                 while (true) {
                     try {
-                        escolha = teclado.nextInt();
+                        numeroDestinatario = teclado.nextInt();
+                        if (numeroDestinatario < 0) {
+                            System.out.println("Número inválido.");
+                            teclado.nextLine();
+                            continue;
+                        }
+                        if (numeroDestinatario == conta.getNumero()) {
+                            System.out.println("Você não pode transferir dinheiro para si mesmo!");
+                            teclado.nextLine();
+                            continue;
+                        }
                     } catch (InputMismatchException e) {
-                        System.out.println("Escolha inválida.");
+                        System.out.println("Número inválido.");
                         teclado.nextLine();
                         continue;
                     }
 
-                    switch (escolha) {
-                        case 1:
-                            System.out.println(
-                                  "Informe o número da conta do destinatário:\n"
-                                + "(Digite \"0\" para retornar)"
-                            );
+                    if (numeroDestinatario == 0) break;
 
-                            ContaCorrente contaDestinatario = null;
+                    contaDestinatario = contaDAO.buscarConta(numeroDestinatario);
 
-                            // essencialmente o mesmo código do menu inicial
-                            while (true) {
-                                try {
-                                    numeroDestinatario = teclado.nextInt();
-                                    if (numeroDestinatario < 0) {
-                                        System.out.println("Número inválido.");
-                                        teclado.nextLine();
-                                        continue;
-                                    }
-                                    if (numeroDestinatario == conta.getNumero()) {
-                                        System.out.println("Você não pode transferir dinheiro para si mesmo!");
-                                        teclado.nextLine();
-                                        continue;
-                                    }
-                                } catch (InputMismatchException e) {
-                                    System.out.println("Número inválido.");
-                                    teclado.nextLine();
-                                    continue;
-                                }
+                    if (contaDestinatario == null) {
+                        System.out.println("Conta não encontrada, tente novamente.");
+                        teclado.nextLine();
+                        continue;
+                    }
 
-                                if (numeroDestinatario == 0) break;
+                    double saldo = conta.getSaldo();
 
-                                contaDestinatario = contaDAO.buscarConta(numeroDestinatario);
+                    System.out.printf(
+                            "- Sua conta -%n"
+                        + "Saldo: %sR$%.2f%n"
+                        + "Limite: R$%.2f%n"
+                        + "Valor a ser transferido: R$%.2f%n"
+                        + "%n",
+                        (saldo >= 0) ? "" : "-", Math.abs(saldo),
+                        conta.getLimite(),
+                        valorTransferencia
+                    );
 
-                                if (contaDestinatario == null) {
-                                    System.out.println("Conta não encontrada, tente novamente.");
-                                    teclado.nextLine();
-                                    continue;
-                                }
+                    System.out.println(
+                            "Deseja realizar a transferência?\n"
+                        + "1. Sim\n"
+                        + "2. Não"
+                    );
 
-                                double saldo = conta.getSaldo();
-
-                                System.out.printf(
-                                      "- Sua conta -%n"
-                                    + "Saldo: %sR$%.2f%n"
-                                    + "Limite: R$%.2f%n"
-                                    + "Valor a ser transferido: R$%.2f%n"
-                                    + "%n",
-                                    (saldo >= 0) ? "" : "-", Math.abs(saldo),
-                                    conta.getLimite(),
-                                    valorTransferencia
-                                );
-
-                                System.out.println(
-                                      "Deseja realizar a transferência?\n"
-                                    + "1. Sim\n"
-                                    + "2. Não"
-                                );
-
-                                while (true) {
-                                    try {
-                                        escolha = teclado.nextInt();
-                                    } catch (InputMismatchException e) {
-                                        System.out.println("Escolha inválida.");
-                                        teclado.nextLine();
-                                        continue;
-                                    }
-
-                                    switch (escolha) {
-                                        case 1:
-                                            System.out.println("Iniciando transferência...");
-
-                                            try {
-                                                contaDAO.transferir(valorTransferencia, conta, contaDestinatario);
-                                            } catch (Exception e) {
-                                                System.out.println("Falha na transferência, tente novamente.");
-                                                return true; //return true não significa sucesso, apenas que o menu retornar deve aparecer
-                                            }
-
-                                            System.out.println("Transferência realizada com sucesso!");
-                                            return true;
-                                        case 2:
-                                            break;
-                                        default:
-                                            System.out.println("Escolha inválida.");
-                                            continue;
-                                    }
-                                    break;
-                                }
-                                break;
-                            }
-                            if (numeroDestinatario == 0) break;
-                            if (escolha == 2) break;
-                            continue;
-                        //TODO: implementar funcionalidades pix com o banco de dados
-                        /*
-                        case 2:
-                            escolha = -1;
-
-                            System.out.println(
-                                  "Informe a chave Pix do destinatário:\n"
-                                + "(Digite \"0\" para retornar)"
-                            );
-                            
-                            String chave = "";
-                            
-                            while (true) {
-                                try {
-                                    chave = teclado.nextLine();
-                                    
-                                    if (chave.equals("0")) {
-                                        break;
-                                    } else {
-                                        conta.transferir(valorTransferencia, chave);
-                                        System.out.println("Iniciando transferência...");
-                                    }
-                                } catch (InputMismatchException e) {
-                                    System.out.println("Chave inválida.");
-                                    teclado.nextLine();
-                                    continue;
-                                } catch (IllegalArgumentException e) {
-                                    System.out.println(e.getMessage());
-                                    continue;
-                                }
-                                
-                                System.out.println("Transferência realizada com sucesso!");
-                                return true;
-                            }
-                        */
-                        case 0:
-                            break;
-                        default:
+                    while (true) {
+                        try {
+                            escolha = teclado.nextInt();
+                        } catch (InputMismatchException e) {
                             System.out.println("Escolha inválida.");
                             teclado.nextLine();
                             continue;
+                        }
+
+                        switch (escolha) {
+                            case 1:
+                                System.out.println("Iniciando transferência...");
+
+                                try {
+                                    contaDAO.transferir(valorTransferencia, conta, contaDestinatario);
+                                } catch (Exception e) {
+                                    System.out.println("Falha na transferência, tente novamente.");
+                                    return true; //return true não significa sucesso, apenas que o menu retornar deve aparecer
+                                }
+
+                                System.out.println("Transferência realizada com sucesso!");
+                                return true;
+                            case 2:
+                                break;
+                            default:
+                                System.out.println("Escolha inválida.");
+                                continue;
+                        }
+                        break;
                     }
                     break;
                 }
-                if (numeroDestinatario == 0) continue;
-                if (escolha == 2) continue;
-                break;
+                if (numeroDestinatario == 0) break;
+                if (escolha == 2) break;
+                continue;
             }
             continue;
         }
     }
-    
+
     private static boolean exibirTransacoes(Scanner teclado, ContaCorrente conta, ContaCorrenteDAO contaDAO) {
-        System.out.println(
-              "Informe quantas transações deseja exibir:\n"
-            + "(Digite \"-1\" para exibir todas)"
-        );
-        
-        int numTransacoes = 0;
-        
-        while (true) {
-            try {
-                numTransacoes = teclado.nextInt();
+        List<Historico> listaHistorico = contaDAO.buscarHistorico(conta.getNumero());
 
-                if (numTransacoes == -1) {
-                    contaDAO.exibirTransacoes(conta);
-                } else {
-                    contaDAO.exibirTransacoes(conta, numTransacoes);
-                }
-            } catch (InputMismatchException e) {
-                System.out.println("Valor deve ser um número.");
-                teclado.nextLine();
-                continue;
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
-                continue;
-            }
-            break;
+        for (Historico historico : listaHistorico) {
+        	// sinal "+" ou "-", mostrando se a conta recebeu ou perdeu dinheiro
+        	boolean sinal = (historico.getQuantia() >= 0);
+
+        	// no database, a quantia é salva em relação ao id_origem
+        	// ou seja, uma transferência é salva como valor negativo
+        	// se o destinatário for esta mesma conta corrente, inverter o sinal para corrigir
+        	if (historico.getIdDestinatario() == conta.getNumero()) {
+				sinal = !sinal;
+			}
+
+			String tipoTransacao = historico.getTipoTransacao();
+			String tipoTransacaoFormatado = "";
+            
+			if (tipoTransacao.equals("deposit")) {
+				tipoTransacaoFormatado = "Depósito";
+			} else if (tipoTransacao.equals("withdrawal")) {
+				tipoTransacaoFormatado = "Saque";
+			} else if (tipoTransacao.equals("transfer")) {
+				if (sinal) {
+					tipoTransacaoFormatado = "Transferência recebida";
+				} else {
+					tipoTransacaoFormatado = "Transferência realizada";
+				}
+			}
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+			System.out.println("----------");
+			System.out.println(historico.getDataHora().format(dtf));
+			System.out.println(tipoTransacaoFormatado);
+        	System.out.printf("%sR$%.2f%n", //ex.: "+R$35,00"
+        		sinal ? "+" : "-",
+        		Math.abs(historico.getQuantia())
+        	);
+			if (tipoTransacaoFormatado.equals("Transferência recebida")) {
+				System.out.println("De: Conta " + historico.getIdOrigem());
+			} else if (tipoTransacaoFormatado.equals("Transferência realizada")) {
+				System.out.println("Para: Conta " + historico.getIdDestinatario());
+			}
         }
-
-        // contaDAO já se encarrega de dar print dos resultados
-        
+        System.out.println("----------");
         return true;
     }
 
@@ -525,8 +468,12 @@ public class App {
                 case 1:
                     try {
                         contaDAO.deletarConta(conta);
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                        return true;
                     } catch (Exception e) {
                         System.out.println("Falha inesperada, tente novamente.");
+                        System.out.println(e.getMessage());
                         return true;
                     }
                     
@@ -541,102 +488,4 @@ public class App {
             }
         }
     }
-    
-    //TODO: implementar funcionalidades pix com o banco de dados
-    /*
-    private static boolean adicionarPix(Scanner teclado, ContaCorrente conta) {
-        while (true) {
-            System.out.println(
-                "Informe a chave Pix de 11 números:\n"
-                + "(Digite \"0\" para retornar)"
-            );
-
-            String chavePix = "";
-
-            while (true) {
-                try {
-                    chavePix = teclado.nextLine();
-
-                    if (chavePix.equals("0")) return false;
-                } catch (InputMismatchException e) {
-                    System.out.println("Chave inválida.");
-                    teclado.nextLine();
-                    continue;
-                }
-
-                System.out.println(
-                    "Digite uma descrição para a chave " + chavePix + '\n'
-                    + "(Digite \"0\" para retornar, ou \"-1\" para não informar descrição)"
-                );
-
-                String descricao = "";
-
-                while (true) {
-                    try {
-                        descricao = teclado.nextLine();
-
-                        if (descricao.equals("0")) break;
-
-                        if (descricao.equals("-1")) {
-                            conta.adicionarChavePix(chavePix);
-                        } else {
-                            conta.adicionarChavePix(chavePix, descricao);
-                        }
-                    } catch (InputMismatchException e) {
-                        System.out.println("Descrição inválida.");
-                        teclado.nextLine();
-                        continue;
-                    } catch (IllegalArgumentException e) {
-                        System.out.println(e.getMessage());
-                        continue;
-                    }
-
-                    System.out.println("Chave Pix adicionada com sucesso!");
-                    return true;
-                }
-                break;
-            }
-            continue;
-        }
-    }
-    
-    private static boolean removerPix(Scanner teclado, ContaCorrente conta) {
-        System.out.println(
-              "Informe a chave para remover:\n"
-            + "(Digite \"0\" para retornar)"
-        );
-
-        String chavePix = "";
-
-        while (true) {
-            try {
-                chavePix = teclado.nextLine();
-
-                if (chavePix.equals("0")) return false;
-            } catch (InputMismatchException e) {
-                System.out.println("Chave inválida.");
-                teclado.nextLine();
-                continue;
-            }
-
-            if (conta.removerChavePix(chavePix)) {
-                System.out.println("Chave Pix removida com sucesso!");
-                return true;
-            } else {
-                System.out.println("A chave Pix não foi encontrada.");
-                continue;
-            }
-        }
-    }
-    
-    private static boolean exibirPix(ContaCorrente conta) {
-        conta.exibirChavesPix();
-        return true;
-    }
-    
-    private static boolean exibirPixFavoritas(ContaCorrente conta) {
-        conta.exibirChavesPixFavoritas();
-        return true;
-    }
-    */
 }
